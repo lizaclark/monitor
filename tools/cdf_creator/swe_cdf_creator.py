@@ -13,7 +13,7 @@ day of the year for each grid cell.
 How leap years are handled:
 February 29th data is removed before being sorted.
 February 28th (plus surround two days) is stored at February 29th.
- 
+
 """
 import datetime as dt
 import pandas as pd
@@ -26,7 +26,8 @@ from monitor import os_tools
 # read in configuration file
 parser = argparse.ArgumentParser(description='Reorder dimensions')
 parser.add_argument('config_file', metavar='config_file',
-                    type=argparse.FileType('r'), nargs=1, help='configuration file')
+                    type=argparse.FileType('r'), nargs=1,
+                    help='configuration file')
 args = parser.parse_args()
 config_dict = read_config(args.config_file[0].name)
 
@@ -70,12 +71,12 @@ for lat, lon in zip(latitude, longitude):
         yesterday_2 = current_day - dt.timedelta(days=2)
         tomorrow_2 = current_day + dt.timedelta(days=2)
 
-        cc = pd.concat([
-	    gb.get_group(g),
-            gb.get_group((yesterday.month, yesterday.day)),
-            gb.get_group((yesterday_2.month, yesterday_2.day)), 
-            gb.get_group((tomorrow.month, tomorrow.day)), 
-            gb.get_group((tomorrow_2.month, tomorrow_2.day))])
+        cc = pd.concat(
+            [gb.get_group(g),
+             gb.get_group((yesterday.month, yesterday.day)),
+             gb.get_group((yesterday_2.month, yesterday_2.day)),
+             gb.get_group((tomorrow.month, tomorrow.day)),
+             gb.get_group((tomorrow_2.month, tomorrow_2.day))])
 
         cc.sort()
 
@@ -108,11 +109,12 @@ for lat, lon in zip(latitude, longitude):
     yesterday_2 = current_day - dt.timedelta(days=2)
     tomorrow_2 = current_day + dt.timedelta(days=2)
 
-    cc = pd.concat([gb.get_group(g), 
-        gb.get_group((yesterday.month, yesterday.day)),
-        gb.get_group((yesterday_2.month, yesterday_2.day)), 
-        gb.get_group((tomorrow.month, tomorrow.day)),
-        gb.get_group((tomorrow_2.month, tomorrow_2.day))])
+    cc = pd.concat(
+        [gb.get_group(g),
+         gb.get_group((yesterday.month, yesterday.day)),
+         gb.get_group((yesterday_2.month, yesterday_2.day)),
+         gb.get_group((tomorrow.month, tomorrow.day)),
+         gb.get_group((tomorrow_2.month, tomorrow_2.day))])
 
     cc.sort()
 

@@ -8,6 +8,7 @@ delivered through OPeNDAP. Because attributes are lost during download,
 they are added back in.
 """
 import xarray as xr
+import numpy as np
 import os
 import argparse
 import calendar
@@ -35,6 +36,7 @@ prelim_met_loc = config_dict['SUBDAILY']['Preliminary_Met_Data']
 old_config_file = config_dict['ECFLOW']['old_Config']
 new_config_file = config_dict['ECFLOW']['new_Config']
 n_days = int(config_dict['ECFLOW']['Met_Delay'])
+met_out = config_dict['ECFLOW']['Orig_Met']
 
 # get current date and number of days
 date = datetime.now() - timedelta(days=n_days)
@@ -83,7 +85,8 @@ varnames = [('pr', 'precipitation_amount'), ('tmmn', 'air_temperature'),
             ('sph', 'specific_humidity')]
 
 # create attribute dictionaries
-
+# xarray will receive error "Illegal attribute" when opening url and delete
+# all attributes, so we have to add them back in.
 # global attributes
 datestring = datetime.now()
 today_date = datestring.strftime('%d %B %Y')
@@ -308,29 +311,21 @@ else:  # if met data for the past year has been downloaded, we only have to
 
 # add variable specific attributes and save as netcdf
 met_dsets['pr'].precipitation_amount.attrs = pr_attrs
-met_dsets['pr'].to_netcdf(os.path.join(met_loc, 'pr.nc'),
-                          mode='w', format='NETCDF4')
-
-
-# Perform units conversion
-units_in.convert(met_dsets['tmmn'].air_temperature, units_out, inplace=True)
-met_dsets['tmmn'].air_temperature.attrs = tmmn_attrs
-met_dsets['tmmn'].to_netcdf(os.path.join(met_loc, 'tmmn.nc'),
-                            mode='w', format='NETCDF4')
-
-units_in.convert(met_dsets['tmmn'].air_temperature, units_out, inplace=True)
-met_dsets['tmmx'].air_temperature.attrs = tmmx_attrs
-met_dsets['tmmx'].to_netcdf(os.path.join(met_loc, 'tmmx.nc'),
-                            mode='w', format='NETCDF4')
-
 met_dsets['vs'].wind_speed.attrs = vs_attrs
-met_dsets['vs'].to_netcdf(os.path.join(met_loc, 'vs.nc'),
-                          mode='w', format='NETCDF4')
-
 met_dsets['srad'].surface_downwelling_shortwave_flux_in_air.attrs = srad_attrs
-met_dsets['srad'].to_netcdf(os.path.join(met_loc, 'srad.nc'),
-                            mode='w', format='NETCDF4')
-
 met_dsets['sph'].specific_humidity.attrs = sph_attrs
-met_dsets['sph'].to_netcdf(os.path.join(met_loc, 'sph.nc'),
-                           mode='w', format='NETCDF4')
+met_dsets['tmmn'].air_temperature.attrs = tmmn_attrs
+met_dsets['tmmx'].air_temperature.attrs = tmmx_attrs
+
+for var in ('tmmn', 'tmmx'):
+    met_dsets[var].values[met_dsets[var].values == -32767] = np.nan
+    # Perform units conversion
+    units_in.convert(met_dsets[var].air_temperature.values[:], units_out,
+                     inplace=True)
+    # Change variable names so that tmmn and tmax are different
+    met_dsets[var].rename({'air_temperature': var}, inplace=True)
+merge_ds = xr.merge(list(met_dsets.values()))
+merge_ds.transpose('day', 'lat', 'lon')
+outfile = os.path.join(met_loc, met_out)
+print('writing {0}'.format(outfile))
+merge_ds.to_netcdf(outfile, mode='w', format='NETCDF4')

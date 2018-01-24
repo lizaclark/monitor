@@ -3,19 +3,18 @@
 regrid.py
 usage: <python> <regrid.py> <configuration.cfg>
 
-This script changes the grid and domain in accordance with 
-the grid_file, using remapcon.
-Remapcon was selected to ensure that no precipitation was lost
-in the regridding process. 
+This script changes the grid and domain in accordance with the grid_file, using
+remapcon.
+Remapcon was selected to ensure that no precipitation was lost in the
+regridding process.
 """
 import os
 import argparse
 from cdo import Cdo
-cdo = Cdo()
+
 from tonic.io import read_config
 
-######### ----------------------------------------###########
-
+cdo = Cdo()
 # read in configuration file
 parser = argparse.ArgumentParser(description='Regrid met data')
 parser.add_argument('config_file', metavar='config_file',
@@ -25,22 +24,19 @@ config_dict = read_config(args.config_file)
 
 # read in met location from config file
 met_loc = config_dict['ECFLOW']['Met_Loc']
+orig_met = config_dict['ECFLOW']['Orig_Met']
+regridded_met = config_dict['ECFLOW']['Regridded_Met']
 
 # read in grid_file from config file
 grid_file = config_dict['SUBDAILY']['GridFile']
 
-# netcdf file prefixes
-param = ['pr', 'tmmn', 'tmmx', 'vs', 'srad', 'sph']
+# in file
+orig_file = os.path.join(met_loc, orig_met)
+# out file
+regrid_file = os.path.join(met_loc, regridded_met)
 
+# remove previous days file, cdo doesn't overwrite
+if os.path.isfile(regrid_file):
+    os.remove(regrid_file)
 
-for var in param:
-    # in file
-    reorder_file = os.path.join(met_loc, '%s.reorder.nc' % (var))
-    # out file
-    regrid_file = os.path.join(met_loc, '%s.regrid.nc' % (var))
-
-    # remove previous days file, cdo doesn't overwrite
-    if os.path.isfile(regrid_file):
-        os.remove(regrid_file)
-
-    cdo.remapcon(grid_file, input=reorder_file, output=regrid_file)
+cdo.remapcon(grid_file, input=orig_file, output=regrid_file)

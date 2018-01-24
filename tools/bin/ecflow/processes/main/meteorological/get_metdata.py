@@ -8,7 +8,6 @@ delivered through OPeNDAP. Because attributes are lost during download,
 they are added back in.
 """
 import xarray as xr
-import numpy as np
 import os
 import argparse
 import calendar
@@ -318,10 +317,12 @@ met_dsets['tmmn'].air_temperature.attrs = tmmn_attrs
 met_dsets['tmmx'].air_temperature.attrs = tmmx_attrs
 
 for var in ('tmmn', 'tmmx'):
-    met_dsets[var].values[met_dsets[var].values == -32767] = np.nan
     # Perform units conversion
     units_in.convert(met_dsets[var].air_temperature.values[:], units_out,
                      inplace=True)
+    # Fix _FillValue after unit conversion
+    met_dsets[var].air_temperature.values[
+        met_dsets[var].air_temperature < -30000] = -32767.
     # Change variable names so that tmmn and tmax are different
     met_dsets[var].rename({'air_temperature': var}, inplace=True)
 merge_ds = xr.merge(list(met_dsets.values()))

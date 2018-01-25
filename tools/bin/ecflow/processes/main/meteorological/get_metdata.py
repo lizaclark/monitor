@@ -327,6 +327,8 @@ for var in ('tmmn', 'tmmx'):
     met_dsets[var].rename({'air_temperature': var}, inplace=True)
 merge_ds = xr.merge(list(met_dsets.values()))
 merge_ds.transpose('day', 'lat', 'lon')
+# MetSim requires time dimension be named "time"
+merge_ds.rename({'day': 'time'}, inplace=True)
 outfile = os.path.join(met_loc, met_out)
 print('writing {0}'.format(outfile))
 merge_ds.to_netcdf(outfile, mode='w', format='NETCDF4')

@@ -192,7 +192,7 @@ sph_attrs['missing_value'] = -32767.
 if not os.listdir(full_year_met_loc):
 
     # replace start date, end date and met location in the configuration file
-    kwargs = {'SUBD_MET_START_DATE': lastyear_date_format,
+    kwargs = {'SUBD_MET_START_DATE': vic_start_date_format,
               'END_DATE': end_date, 'VIC_START_DATE': vic_start_date_format,
               'VIC_SAVE_STATE': vic_save_state_format,
               'MET_LOC': full_year_met_loc, 'FULL_YEAR': 'Year'}
@@ -239,7 +239,7 @@ if not os.listdir(full_year_met_loc):
 else:  # if met data for the past year has been downloaded, we only have to
     # download the last 60 days.
     # replace start date, end date and met location in the configuration file
-    kwargs = {'SUBD_MET_START_DATE': lastyear_date_format,
+    kwargs = {'SUBD_MET_START_DATE': vic_start_date_format,
               'END_DATE': end_date,
               'VIC_START_DATE': vic_start_date_format,
               'VIC_SAVE_STATE': vic_save_state_format,

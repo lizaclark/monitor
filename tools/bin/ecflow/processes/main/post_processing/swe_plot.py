@@ -46,7 +46,8 @@ dsx = xr.open_dataset(percent_file)
 plt.figure(figsize=(8, 8))
 
 ax = plt.axes(projection=ccrs.Mercator(central_longitude=-120,
-                                       min_latitude=40.7, max_latitude=49.3, globe=None))
+                                       min_latitude=40.7, max_latitude=49.3,
+                                       globe=None))
 
 ax.set_extent([-109.5, -125.01, 40, 54.01], ccrs.Geodetic())
 
@@ -54,14 +55,16 @@ gl = add_gridlines(ax)
 
 add_map_features(ax)
 
-cmap = matplotlib.colors.ListedColormap(['darkred', 'red', 'tomato', 'lightsalmon', 'mistyrose',
-                                         'yellow', 'lightsteelblue', 'cornflowerblue',
+cmap = matplotlib.colors.ListedColormap(['darkred', 'red', 'tomato',
+                                         'lightsalmon', 'mistyrose', 'yellow',
+                                         'lightsteelblue', 'cornflowerblue',
                                          'royalblue', 'blue', 'navy'])
 
 img = dsx['Percentile'].plot(ax=ax, vmin=0, vmax=10,
                              levels=[0, 0.01, 0.05, 0.1, 0.2, 0.35,
                                      0.65, 0.8, 0.9, 0.95, 0.99, 1.0],
-                             add_colorbar=False, cmap=cmap, transform=ccrs.PlateCarree(), zorder=2)
+                             add_colorbar=False, cmap=cmap,
+                             transform=ccrs.PlateCarree(), zorder=2)
 
 
 plt.suptitle('SWE Percentile (threshold = 10mm)\n (%s)' % (date),
@@ -76,4 +79,4 @@ cbar.ax.tick_params(labelsize=12)
 cbar.ax.set_xlabel('percentile', fontsize=15)
 
 # save figure
-plt.savefig(os.path.join(plot_loc,'SWE_%s.png' % (date_ncfile)), bbox='tight')
+plt.savefig(os.path.join(plot_loc, 'SWE_%s.png' % (date_ncfile)), bbox='tight')

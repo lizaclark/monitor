@@ -26,10 +26,11 @@ from collections import OrderedDict
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Calculate SWE percentiles')
-parser.add_argument(
-    'config_file',
-    metavar='config_file',
-    help='the python configuration file, see template: /monitor/config/python_template.cfg')
+
+parser.add_argument('config_file', metavar='config_file',
+                    help='the python configuration file, see template: ' +
+                    '/monitor/config/python_template.cfg')
+
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
@@ -90,7 +91,8 @@ for lat, lon in zip(latitude, longitude):
     value = ds_lon.values
 
     # read in sorted list of cdf values
-    # if cdf cannot be read then that lat lon is saved in the dictionary without a percentile
+    # if cdf cannot be read then that lat lon is saved in the dictionary
+    # without a percentile
     # this is done to make creating the xarray dataset easier later on
     try:
         cdf_file = '%s_%s' % (lat, lon)

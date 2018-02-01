@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """
-get_metdata.py 
+get_metdata.py
 usage: <python> <get_metdata.py> <configuration.cfg>
 This script downloads meteorological data through xarray from
 http://thredds.northwestknowledge.net:8080/thredds/reacch_climate_MET_catalog.html
-delivered through OPeNDAP. Because attributes are lost during download, 
-they are added back in. 
+delivered through OPeNDAP. Because attributes are lost during download,
+they are added back in.
 """
 import xarray as xr
 import os
@@ -13,9 +13,10 @@ import argparse
 import calendar
 from collections import OrderedDict
 from datetime import datetime, timedelta
+import cf_units
+
 from tonic.io import read_config
 from monitor import model_tools
-######### ----------------------------------------###########
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Download met data')
@@ -24,12 +25,17 @@ parser.add_argument('config_file', metavar='config_file',
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
+# Get units conversion from cf_units for K to degC
+units_in = cf_units.Unit('K')
+units_out = cf_units.Unit('degC')
+
 # read in meteorological data location
 full_year_met_loc = config_dict['SUBDAILY']['Full_Year_Met_Data']
 prelim_met_loc = config_dict['SUBDAILY']['Preliminary_Met_Data']
 old_config_file = config_dict['ECFLOW']['old_Config']
 new_config_file = config_dict['ECFLOW']['new_Config']
 n_days = int(config_dict['ECFLOW']['Met_Delay'])
+met_out = config_dict['ECFLOW']['Orig_Met']
 
 # get current date and number of days
 date = datetime.now() - timedelta(days=n_days)
@@ -74,10 +80,12 @@ num_lon = 1385
 # an abbreviation and a full name is needed
 varnames = [('pr', 'precipitation_amount'), ('tmmn', 'air_temperature'),
             ('tmmx', 'air_temperature'), ('vs', 'wind_speed'),
-            ('srad', 'surface_downwelling_shortwave_flux_in_air'), ('sph', 'specific_humidity')]
+            ('srad', 'surface_downwelling_shortwave_flux_in_air'),
+            ('sph', 'specific_humidity')]
 
 # create attribute dictionaries
-
+# xarray will receive error "Illegal attribute" when opening url and delete
+# all attributes, so we have to add them back in.
 # global attributes
 datestring = datetime.now()
 today_date = datestring.strftime('%d %B %Y')
@@ -88,12 +96,14 @@ globe_attrs[
 globe_attrs['date'] = today_date
 globe_attrs[
     'note1'] = "The projection information for this file is: GCS WGS 1984."
-globe_attrs['note2'] = ("Citation: Abatzoglou, J.T., 2013, Development of gridded surface " +
-                        "meteorological data for ecological applications and modeling, " +
-                        "International Journal of Climatology, DOI: 10.1002/joc.3413")
+globe_attrs['note2'] = ("Citation: Abatzoglou, J.T., 2013, Development of " +
+                        "gridded surface meteorological data for ecological " +
+                        "applications and modeling, International Journal of" +
+                        " Climatology, DOI: 10.1002/joc.3413")
 globe_attrs['last_permanent_slice'] = "50"
-globe_attrs['note3'] = ("Data in slices after last_permanent_slice (1-based) are " +
-                        "considered provisional and subject to change with subsequent updates")
+globe_attrs['note3'] = ("Data in slices after last_permanent_slice (1-based)" +
+                        " are considered provisional and subject to change" +
+                        " with subsequent updates")
 # latitude attributes
 lat_attrs = OrderedDict()
 lat_attrs['units'] = "degrees_north"
@@ -128,7 +138,7 @@ pr_attrs['missing_value'] = -32767.
 
 # minimum temperature
 tmmn_attrs = OrderedDict()
-tmmn_attrs['units'] = "K"
+tmmn_attrs['units'] = "degC"
 tmmn_attrs['description'] = "Daily Minimum Temperature"
 tmmn_attrs['_FillValue'] = -32767.
 tmmn_attrs['esri_pe_string'] = esri_str
@@ -139,7 +149,7 @@ tmmn_attrs['missing_value'] = -32767.
 
 # maximum temperature
 tmmx_attrs = OrderedDict()
-tmmx_attrs['units'] = "K"
+tmmx_attrs['units'] = "degC"
 tmmx_attrs['description'] = "Daily Maximum Temperature"
 tmmx_attrs['_FillValue'] = -32767.
 tmmx_attrs['esri_pe_string'] = esri_str
@@ -161,7 +171,8 @@ vs_attrs['missing_value'] = -32767.
 # shortwave radiation
 srad_attrs = OrderedDict()
 srad_attrs['units'] = "W m-2"
-srad_attrs['description'] = "Daily Mean Downward Shortwave Radiation At Surface"
+srad_attrs['description'] = "Daily Mean Downward Shortwave Radiation At " + \
+    "Surface"
 srad_attrs['_FillValue'] = -32767.
 srad_attrs['esri_pe_string'] = esri_str
 srad_attrs['coordinates'] = "lon lat"
@@ -181,8 +192,9 @@ sph_attrs['missing_value'] = -32767.
 if not os.listdir(full_year_met_loc):
 
     # replace start date, end date and met location in the configuration file
-    kwargs = {'SUBD_MET_START_DATE': lastyear_date_format,
-              'END_DATE': end_date, 'VIC_START_DATE': vic_start_date_format, 'VIC_SAVE_STATE': vic_save_state_format,
+    kwargs = {'SUBD_MET_START_DATE': vic_start_date_format,
+              'END_DATE': end_date, 'VIC_START_DATE': vic_start_date_format,
+              'VIC_SAVE_STATE': vic_save_state_format,
               'MET_LOC': full_year_met_loc, 'FULL_YEAR': 'Year'}
     model_tools.replace_var_pythonic_config(
         old_config_file, new_config_file, header=None, **kwargs)
@@ -193,17 +205,22 @@ if not os.listdir(full_year_met_loc):
     met_dsets = dict()
     for var in varnames:
         url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                        "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], year, num_lon) +
-                        "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                        "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (
+                            var[0], var[0], year, num_lon) +
+                        "lat[0:1:%s],day[%s:1:%s]," % (
+                            num_lat, num_startofyear, num_day) +
                         "%s[%s:1:%s]" % (var[1], num_startofyear, num_day) +
                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
 
         ds_thisyear = xr.open_dataset(url_thisyear)
 
         url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                        "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], lastyear, num_lon) +
-                        "lat[0:1:%s],day[%s:1:%s]," % (num_lat, lastyear_num_day, num_endofyear) +
-                        "%s[%s:1:%s]" % (var[1], lastyear_num_day, num_endofyear) +
+                        "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (
+                            var[0], var[0], lastyear, num_lon) +
+                        "lat[0:1:%s],day[%s:1:%s]," % (
+                            num_lat, lastyear_num_day, num_endofyear) +
+                        "%s[%s:1:%s]" % (
+                            var[1], lastyear_num_day, num_endofyear) +
                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
 
         ds_lastyear = xr.open_dataset(url_lastyear)
@@ -219,10 +236,13 @@ if not os.listdir(full_year_met_loc):
         met_dsets[var[0]] = ds
 
 
-else:  # if met data for the past year has been downloaded, we only have to download the last 60 days.
-
+else:  # if met data for the past year has been downloaded, we only have to
+    # download the last 60 days.
     # replace start date, end date and met location in the configuration file
-    kwargs = {'SUBD_MET_START_DATE': lastyear_date_format, 'END_DATE': end_date, 'VIC_START_DATE': vic_start_date_format, 'VIC_SAVE_STATE': vic_save_state_format,
+    kwargs = {'SUBD_MET_START_DATE': vic_start_date_format,
+              'END_DATE': end_date,
+              'VIC_START_DATE': vic_start_date_format,
+              'VIC_SAVE_STATE': vic_save_state_format,
               'MET_LOC': prelim_met_loc, 'FULL_YEAR': 'Day'}
 
     model_tools.replace_var_pythonic_config(
@@ -236,8 +256,10 @@ else:  # if met data for the past year has been downloaded, we only have to down
         met_dsets = dict()
         for var in varnames:
             url = ("http://thredds.northwestknowledge.net:8080" +
-                   "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], year, num_lon) +
-                   "lat[0:1:%s],day[%s:1:%s]," % (num_lat, vic_save_state_num, num_day) +
+                   "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (
+                       var[0], var[0], year, num_lon) +
+                   "lat[0:1:%s],day[%s:1:%s]," % (
+                       num_lat, vic_save_state_num, num_day) +
                    "%s[%s:1:%s]" % (var[1], vic_save_state_num, num_day) +
                    "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
 
@@ -255,17 +277,23 @@ else:  # if met data for the past year has been downloaded, we only have to down
         met_dsets = dict()
         for var in varnames:
             url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                            "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], year, num_lon) +
-                            "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
-                            "%s[%s:1:%s]" % (var[1], num_startofyear, num_day) +
+                            "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (
+                                var[0], var[0], year, num_lon) +
+                            "lat[0:1:%s],day[%s:1:%s]," % (
+                                num_lat, num_startofyear, num_day) +
+                            "%s[%s:1:%s]" % (
+                                var[1], num_startofyear, num_day) +
                             "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
 
             ds_thisyear = xr.open_dataset(url_thisyear)
 
             url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                            "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], lastyear, num_lon) +
-                            "lat[0:1:%s],day[%s:1:%s]," % (num_lat, vic_save_state_num, num_endofyear) +
-                            "%s[%s:1:%s]" % (var[1], vic_save_state_num, num_endofyear) +
+                            "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (
+                                var[0], var[0], lastyear, num_lon) +
+                            "lat[0:1:%s],day[%s:1:%s]," % (
+                                num_lat, vic_save_state_num, num_endofyear) +
+                            "%s[%s:1:%s]" % (
+                                var[1], vic_save_state_num, num_endofyear) +
                             "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
 
             ds_lastyear = xr.open_dataset(url_lastyear)
@@ -282,25 +310,25 @@ else:  # if met data for the past year has been downloaded, we only have to down
 
 # add variable specific attributes and save as netcdf
 met_dsets['pr'].precipitation_amount.attrs = pr_attrs
-met_dsets['pr'].to_netcdf(os.path.join(met_loc, 'pr.nc'),
-                          mode='w', format='NETCDF4')
-
-met_dsets['tmmn'].air_temperature.attrs = tmmn_attrs
-met_dsets['tmmn'].to_netcdf(os.path.join(met_loc, 'tmmn.nc'),
-                            mode='w', format='NETCDF4')
-
-met_dsets['tmmx'].air_temperature.attrs = tmmx_attrs
-met_dsets['tmmx'].to_netcdf(os.path.join(met_loc, 'tmmx.nc'),
-                            mode='w', format='NETCDF4')
-
 met_dsets['vs'].wind_speed.attrs = vs_attrs
-met_dsets['vs'].to_netcdf(os.path.join(met_loc, 'vs.nc'),
-                          mode='w', format='NETCDF4')
-
 met_dsets['srad'].surface_downwelling_shortwave_flux_in_air.attrs = srad_attrs
-met_dsets['srad'].to_netcdf(os.path.join(met_loc, 'srad.nc'),
-                            mode='w', format='NETCDF4')
-
 met_dsets['sph'].specific_humidity.attrs = sph_attrs
-met_dsets['sph'].to_netcdf(os.path.join(met_loc, 'sph.nc'),
-                           mode='w', format='NETCDF4')
+met_dsets['tmmn'].air_temperature.attrs = tmmn_attrs
+met_dsets['tmmx'].air_temperature.attrs = tmmx_attrs
+
+for var in ('tmmn', 'tmmx'):
+    # Perform units conversion
+    units_in.convert(met_dsets[var].air_temperature.values[:], units_out,
+                     inplace=True)
+    # Fix _FillValue after unit conversion
+    met_dsets[var].air_temperature.values[
+        met_dsets[var].air_temperature < -30000] = -32767.
+    # Change variable names so that tmmn and tmax are different
+    met_dsets[var].rename({'air_temperature': var}, inplace=True)
+merge_ds = xr.merge(list(met_dsets.values()))
+merge_ds.transpose('day', 'lat', 'lon')
+# MetSim requires time dimension be named "time"
+merge_ds.rename({'day': 'time'}, inplace=True)
+outfile = os.path.join(met_loc, met_out)
+print('writing {0}'.format(outfile))
+merge_ds.to_netcdf(outfile, mode='w', format='NETCDF4')

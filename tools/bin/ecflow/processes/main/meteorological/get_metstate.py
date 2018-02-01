@@ -15,6 +15,7 @@ import calendar
 from collections import OrderedDict
 from datetime import datetime, timedelta
 import cf_units
+import numpy as np
 
 from tonic.io import read_config
 from monitor import model_tools
@@ -60,9 +61,9 @@ num_lon = 1385
 # define variable names used when filling threads URL
 # an abbreviation and a full name is needed
 varnames = [('pr', 'precipitation_amount'), ('tmmn', 'air_temperature'),
-            ('tmmx', 'air_temperature'), ('vs', 'wind_speed'),
-            ('srad', 'surface_downwelling_shortwave_flux_in_air'),
-            ('sph', 'specific_humidity')]
+            ('tmmx', 'air_temperature')] #, ('vs', 'wind_speed'),
+            #('srad', 'surface_downwelling_shortwave_flux_in_air'),
+            #('sph', 'specific_humidity')]
 
 # create attribute dictionaries
 # xarray will receive error "Illegal attribute" when opening url and delete
@@ -139,35 +140,14 @@ tmmx_attrs['cell_methods'] = "time: sum(interval: 24 hours)"
 tmmx_attrs['height'] = "2 m"
 tmmx_attrs['missing_value'] = -32767.
 
-# wind speed
-vs_attrs = OrderedDict()
-vs_attrs['units'] = "m/s"
-vs_attrs['description'] = "Daily Mean Wind Speed"
-vs_attrs['_FillValue'] = -32767.
-vs_attrs['esri_pe_string'] = esri_str
-vs_attrs['coordinates'] = "lon lat"
-vs_attrs['height'] = "10 m"
-vs_attrs['missing_value'] = -32767.
-
-# shortwave radiation
-srad_attrs = OrderedDict()
-srad_attrs['units'] = "W m-2"
-srad_attrs['description'] = "Daily Mean Downward Shortwave Radiation At " + \
-    "Surface"
-srad_attrs['_FillValue'] = -32767.
-srad_attrs['esri_pe_string'] = esri_str
-srad_attrs['coordinates'] = "lon lat"
-srad_attrs['missing_value'] = -32767.
-
-# specific humidity
-sph_attrs = OrderedDict()
-sph_attrs['units'] = "kg/kg"
-sph_attrs['description'] = "Daily Mean Specific Humidity"
-sph_attrs['_FillValue'] = -32767.
-sph_attrs['esri_pe_string'] = esri_str
-sph_attrs['coordinates'] = "lon lat"
-sph_attrs['height'] = "2 m"
-sph_attrs['missing_value'] = -32767.
+# SWE -- just use placeholder values
+swe_attrs = OrderedDict()
+swe_attrs['units'] = "mm"
+swe_attrs['description'] = "Placeholder for Daily Snow Water Equivalent"
+swe_attrs['_FillValue'] = -32767.
+swe_attrs['esri_pe_string'] = esri_str
+swe_attrs['coordinates'] = "lon lat"
+swe_attrs['missing_value'] = -32767.
 
 # since start and end are always 90 days apart, we never download data from
 # more than 2 calendar years
@@ -231,9 +211,6 @@ else:  # if we have data from the same year, can download from same file.
 
 # add variable specific attributes and save as netcdf
 met_dsets['pr'].precipitation_amount.attrs = pr_attrs
-met_dsets['vs'].wind_speed.attrs = vs_attrs
-met_dsets['srad'].surface_downwelling_shortwave_flux_in_air.attrs = srad_attrs
-met_dsets['sph'].specific_humidity.attrs = sph_attrs
 met_dsets['tmmn'].air_temperature.attrs = tmmn_attrs
 met_dsets['tmmx'].air_temperature.attrs = tmmx_attrs
 
@@ -251,6 +228,12 @@ merge_ds = xr.merge(list(met_dsets.values()))
 merge_ds.transpose('day', 'lat', 'lon')
 # MetSim requires time dimension be named "time"
 merge_ds.rename({'day': 'time'}, inplace=True)
+
+# Add placeholder for SWE
+merge_ds['swe'] = (('time', 'lat', 'lon'), np.ones((merge_ds.dims['time'],
+                                                   merge_ds.dims['lat'],
+                                                   merge_ds.dims['lon'])))
+
 outfile = os.path.join(met_loc, met_state)
 print('writing {0}'.format(outfile))
 merge_ds.to_netcdf(outfile, mode='w', format='NETCDF4')

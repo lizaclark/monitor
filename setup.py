@@ -53,10 +53,6 @@ def check_dependencies():
     except ImportError:
         install_requires.append('xarray')
     try:
-        import cartopy
-    except ImportError:
-        install_requires.append('cartopy')
-    try:
         import netCDF4
     except ImportError:
         install_requires.append('netCDF4')
@@ -64,7 +60,18 @@ def check_dependencies():
         import configobj
     except:
         install_requires.append('configobj')
-
+    try:
+        import cf_units
+    except ImportError:
+        install_requires.append('cf_units')
+    try:
+        import tonic
+    except ImportError:
+        install_requires.append('tonic')
+    try:
+        import cdo
+    except ImportError:
+        install_requires.append('cdo')
     return install_requires
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ import argparse
 import calendar
 from collections import OrderedDict
 from datetime import datetime, timedelta
+from cdo import Cdo
 import cf_units
 
 from tonic.io import read_config
@@ -28,10 +29,16 @@ parser.add_argument('config_file', metavar='config_file',
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
+# initialize cdo
+cdo = Cdo()
+
 # read in meteorological data location
 met_fcst_loc = config_dict['FORECAST']['metfcst_Loc']
 old_config_file = config_dict['ECFLOW']['old_Config']
 new_config_file = config_dict['ECFLOW']['new_Config']
+
+# read in grid_file from config file
+grid_file = config_dict['SUBDAILY']['GridFile']
 
 # define variable names used when filling threads URL
 # an abbreviation and a full name is needed
@@ -68,5 +75,5 @@ for model in modelnames:
     merge_ds = xr.merge(dlist)
     merge_ds.transpose('time', 'lat', 'lon')
     outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
-    print('writing {0}'.format(outfile))
-    merge_ds.to_netcdf(outfile, mode='w', format='NETCDF4')
+    print('Conservatively remap and write to {0}'.format(outfile))
+    cdo.remapcon(grid_file, input=merge_ds, output=outfile)

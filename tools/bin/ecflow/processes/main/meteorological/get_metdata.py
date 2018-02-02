@@ -14,6 +14,7 @@ import calendar
 from collections import OrderedDict
 from datetime import datetime, timedelta
 import cf_units
+from cdo import Cdo
 
 from tonic.io import read_config
 from monitor import model_tools
@@ -25,9 +26,12 @@ parser.add_argument('config_file', metavar='config_file',
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
-# Get units conversion from cf_units for K to degC
+# get units conversion from cf_units for K to degC
 units_in = cf_units.Unit('K')
 units_out = cf_units.Unit('degC')
+
+# initial cdo
+cdo = Cdo()
 
 # read in meteorological data location
 full_year_met_loc = config_dict['SUBDAILY']['Full_Year_Met_Data']
@@ -36,6 +40,9 @@ old_config_file = config_dict['ECFLOW']['old_Config']
 new_config_file = config_dict['ECFLOW']['new_Config']
 n_days = int(config_dict['ECFLOW']['Met_Delay'])
 met_out = config_dict['ECFLOW']['Orig_Met']
+
+# read in grid_file from config file
+grid_file = config_dict['SUBDAILY']['GridFile']
 
 # get current date and number of days
 date = datetime.now() - timedelta(days=n_days)
@@ -330,5 +337,5 @@ merge_ds.transpose('day', 'lat', 'lon')
 # MetSim requires time dimension be named "time"
 merge_ds.rename({'day': 'time'}, inplace=True)
 outfile = os.path.join(met_loc, met_out)
-print('writing {0}'.format(outfile))
-merge_ds.to_netcdf(outfile, mode='w', format='NETCDF4')
+print('Conservatively remap and write to {0}'.format(outfile))
+cdo.remapcon(grid_file, input=merge_ds, output=outfile)

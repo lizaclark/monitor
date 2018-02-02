@@ -14,6 +14,7 @@ import argparse
 import calendar
 from collections import OrderedDict
 from datetime import datetime, timedelta
+from cdo import Cdo
 import cf_units
 import numpy as np
 
@@ -31,9 +32,15 @@ config_dict = read_config(args.config_file)
 units_in = cf_units.Unit('K')
 units_out = cf_units.Unit('degC')
 
+# Initialize Cdo class
+cdo = Cdo()
+
 # read in meteorological data location
 met_loc = config_dict['ECFLOW']['Met_Loc']
 met_state = config_dict['SUBDAILY']['Met_State_File']
+
+# read in grid_file from config file
+grid_file = config_dict['SUBDAILY']['GridFile']
 
 # get dates to process
 state_end_date = datetime.strptime(
@@ -235,5 +242,6 @@ merge_ds['swe'] = (('time', 'lat', 'lon'), np.ones((merge_ds.dims['time'],
                                                    merge_ds.dims['lon'])))
 
 outfile = os.path.join(met_loc, met_state)
-print('writing {0}'.format(outfile))
-merge_ds.to_netcdf(outfile, mode='w', format='NETCDF4')
+print('Conservatively remap and write to {0}'.format(outfile))
+cdo.remapcon(grid_file, input=merge_ds, output=outfile)
+

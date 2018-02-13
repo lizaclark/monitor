@@ -45,7 +45,7 @@ grid_file = config_dict['SUBDAILY']['GridFile']
 varnames = ['was', 'dps', 'tasmean', 'tasmax', 'tasmin', 'rsds',
             'pr', 'pet']
 # define model names for file name
-modelnames = ['GFDL']
+modelnames = ['ENSMEAN']
 # ['NCAR', 'NASA', 'GFDL', 'GFDL-FLOR', 'ENSMEAN', 'CMC1', 'CMC2',
 #              'CFSv2']
 new_units = {'was': 'm s-1', 'dps': 'degC', 'tasmean': 'degC',
@@ -63,7 +63,7 @@ for model in modelnames:
                'bcsd_nmme_metdata_%s_forecast_%s_daily.nc' % (
                    model, var))
         print('Reading {0}'.format(url))
-        ds[var] = xr.open_dataset(url)
+        ds = xr.open_dataset(url)
         if ds[var].attrs['units'] == 'F':
             ds[var].attrs['units'] = 'degF'
         units_in = cf_units.Unit(ds[var].attrs['units'])
@@ -74,6 +74,8 @@ for model in modelnames:
         dlist.append(ds)
     merge_ds = xr.merge(dlist)
     merge_ds.transpose('time', 'lat', 'lon')
+    tmp_file = os.path.join(met_fcst_loc, 'tmp_file.nc')
+    merge_ds.to_netcdf(tmp_file)
     outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
     print('Conservatively remap and write to {0}'.format(outfile))
-    cdo.remapcon(grid_file, input=merge_ds, output=outfile)
+    cdo.remapcon(grid_file, input=tmp_file, output=outfile)

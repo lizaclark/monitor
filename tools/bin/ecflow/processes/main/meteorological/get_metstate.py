@@ -36,7 +36,6 @@ units_out = cf_units.Unit('degC')
 cdo = Cdo()
 
 # read in meteorological data location
-met_loc = config_dict['ECFLOW']['Met_Loc']
 met_state = config_dict['SUBDAILY']['Met_State_File']
 
 # read in grid_file from config file
@@ -234,14 +233,9 @@ for var in ('tmmn', 'tmmx'):
 merge_ds = xr.merge(list(met_dsets.values()))
 merge_ds.transpose('day', 'lat', 'lon')
 # MetSim requires time dimension be named "time"
-merge_ds.rename({'day': 'time'}, inplace=True)
+merge_ds.rename({'day': 'time', 'tmmn': 't_min', 'tmmx': 't_max',
+                 'precipitation_amount': 'prec'}, inplace=True)
 
-# Add placeholder for SWE
-merge_ds['swe'] = (('time', 'lat', 'lon'), np.ones((merge_ds.dims['time'],
-                                                   merge_ds.dims['lat'],
-                                                   merge_ds.dims['lon'])))
-
-outfile = os.path.join(met_loc, met_state)
-print('Conservatively remap and write to {0}'.format(outfile))
-cdo.remapcon(grid_file, input=merge_ds, output=outfile)
+print('Conservatively remap and write to {0}'.format(met_state))
+cdo.remapcon(grid_file, input=merge_ds, output=met_state)
 

@@ -7,8 +7,6 @@ Runs VIC 5 using image driver.
 
 echo "Today is $(date)"
 
-python %ECF_HOME%/processes/main/models/create_global_file.py %WORKING_CFG_FILE%
-
-%EXECUTABLE_VIC5%/vic_image.exe -g %GLOBAL_PARAMS_VIC5%
+python %ECF_HOME%/processes/main/models/prep_and_run_vic.py %WORKING_CFG_FILE%
 
 %include <tail.h>

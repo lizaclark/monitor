@@ -53,7 +53,6 @@ new_units = {'was': 'm s-1', 'dps': 'degC', 'tasmean': 'degC',
              'pr': 'mm', 'pet': 'mm'}
 
 # download metdata from http://thredds.northwestknowledge.net
-met_dsets = dict()
 for model in modelnames:
     dlist = []
     for var in varnames:
@@ -73,7 +72,7 @@ for model in modelnames:
         ds[var].attrs['units'] = new_units[var]
         dlist.append(ds)
     merge_ds = xr.merge(dlist)
-    merge_ds.transpose('time', 'lat', 'lon')
+    merge_ds = merge_ds.transpose('time', 'lat', 'lon')
     tmp_file = os.path.join(met_fcst_loc, 'tmp_file.nc')
     merge_ds.to_netcdf(tmp_file)
     outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))

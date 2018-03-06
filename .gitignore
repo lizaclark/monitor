@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# ecflow-created job scripts
+*.job[0-9]
+
 # C extensions
 *.so
 

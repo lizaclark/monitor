@@ -1,0 +1,34 @@
+# 4.0.7
+suite processes
+  repeat day 1
+  edit ECF_INCLUDE '/data/eclark2/toolbox/monitor/tools/bin/ecflow/include'
+  edit ECF_HOME '/data/eclark2/toolbox/monitor/tools/bin/ecflow'
+  edit USER_EMAIL 'eclark2@uw.edu'
+  edit CORES '1'
+  edit CFG_FILE '/data/eclark2/toolbox/monitor/config/python_met_test.cfg'
+  edit WORKING_CFG_FILE '/data/eclark2/toolbox/monitor/config/working_python_met_test.cfg'
+  edit ENVIRON '/data/eclark2/anaconda3/envs/ecflow_env_py3/bin'
+  edit TONIC '/data/eclark2/tonic/tonic/models/vic'
+  edit TONIC_CFG '/data/eclark2/toolbox/monitor/config/'
+  edit EXECUTABLE_VIC5 '/data/eclark2/toolbox/models/VIC/vic/drivers/image'
+  edit GLOBAL_PARAMS_VIC5 '/data/eclark2/toolbox/run_vic/vic_5_pnw_global_file'
+  edit SYS_PATH '/data/eclark2/anaconda3/envs/monitor3/bin:/data/eclark2/anaconda3/bin:/pool0/home/eclark2/ecflow/bin:/usr/lib64/qt-3.3/bin:/usr/lib64/mpich-3.2/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/pool0/home/eclark2/.local/bin:/pool0/home/eclark2/bin' 
+  family main
+    family meteorological
+      task get_metdata
+        time 21:30
+      task get_metstate
+        trigger /processes/main/meteorological/get_metdata eq complete
+      task metsim_metgrid
+        trigger /processes/main/meteorological/get_metstate eq complete
+      task get_metfcst
+        trigger /processes/main/meteorological/get_metdata eq complete
+      #task metsim_fcst
+      #  trigger /processes/main/meteorological/get_metfcst eq complete and /processes/main/meteorological/metsim_metgrid eq complete
+    endfamily
+    family models
+      task run_vic
+        trigger /processes/main/meteorological/metsim_metgrid eq complete
+    endfamily
+  endfamily
+endsuite

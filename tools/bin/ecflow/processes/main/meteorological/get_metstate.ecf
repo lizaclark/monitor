@@ -7,6 +7,10 @@ Only run if a new state file needs to be created. Otherwise, use existing state.
 %end
 
 echo "Today is $(date)"
+set +u
+source activate ncdata
+set -u
+export CDO="/data/eclark2/anaconda3/envs/ncdata/bin/cdo"
 
 python %ECF_HOME%/processes/main/meteorological/get_metstate.py %WORKING_CFG_FILE%
 

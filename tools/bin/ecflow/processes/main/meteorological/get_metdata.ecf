@@ -8,6 +8,10 @@ Outputs are saved in the Met_Loc defined in config file.
 %end
 
 echo "Today is $(date)"
+set +u
+source activate ncdata
+set -u
+export CDO="/data/eclark2/anaconda3/envs/ncdata/bin/cdo" 
 
 python %ECF_HOME%/processes/main/meteorological/get_metdata.py %CFG_FILE%
 

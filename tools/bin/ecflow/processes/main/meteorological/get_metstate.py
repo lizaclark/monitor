@@ -67,9 +67,7 @@ num_lon = 1385
 # define variable names used when filling threads URL
 # an abbreviation and a full name is needed
 varnames = [('pr', 'precipitation_amount'), ('tmmn', 'air_temperature'),
-            ('tmmx', 'air_temperature')] #, ('vs', 'wind_speed'),
-            #('srad', 'surface_downwelling_shortwave_flux_in_air'),
-            #('sph', 'specific_humidity')]
+            ('tmmx', 'air_temperature')]
 
 # create attribute dictionaries
 # xarray will receive error "Illegal attribute" when opening url and delete
@@ -235,6 +233,12 @@ merge_ds.transpose('day', 'lat', 'lon')
 # MetSim requires time dimension be named "time"
 merge_ds.rename({'day': 'time', 'tmmn': 't_min', 'tmmx': 't_max',
                  'precipitation_amount': 'prec'}, inplace=True)
+# Make sure tmax >= tmin always
+tmin = np.copy(merge_ds['t_min'].values)
+tmax = np.copy(merge_ds['t_max'].values)
+swap_values = ((tmin > tmax) & (tmax != -32767.))
+merge_ds['t_min'].values[swap_values] = tmax[swap_values]
+merge_ds['t_max'].values[swap_values] = tmin[swap_values]
 
 print('Conservatively remap and write to {0}'.format(met_state))
 cdo.remapcon(grid_file, input=merge_ds, output=met_state)

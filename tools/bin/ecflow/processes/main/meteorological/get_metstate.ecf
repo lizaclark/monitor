@@ -1,4 +1,7 @@
 %include <qsub.h>
+=======
+%include <qsub_build.h>
+>>>>>>> origin/feature/addfcst
 %include <head.h>
 %manual
 Run get_metstate.py.
@@ -11,6 +14,8 @@ set +u
 source activate ncdata
 set -u
 export CDO="/data/eclark2/anaconda3/envs/ncdata/bin/cdo"
+
+echo "Today is $(date)"
 
 python %ECF_HOME%/processes/main/meteorological/get_metstate.py %WORKING_CFG_FILE%
 

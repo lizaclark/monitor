@@ -21,7 +21,7 @@ args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
 state = config_dict['SUBDAILY']['Met_State_File']
-outstate = config_dict['SUBDAILY']['Fcst_Met_State']
+outstate = config_dict['SUBDAILY']['MedFcst_Met_State']
 forcing = config_dict['ECFLOW']['Orig_Met']
 old_config_file = config_dict['SUBDAILY']['MetSim_Template']
 new_config_file = config_dict['SUBDAILY']['MetSim_Cfg']
@@ -35,6 +35,6 @@ kwargs = {'STARTDATE': start_date.replace('-', '/'),
           'INSTATE': state, 'OUTDIR': out_dir, 'OUTSTATE': outstate}
 model_tools.replace_var_pythonic_config(
     old_config_file, new_config_file, header=None, **kwargs)
-subprocess.check_call(['ms', new_config_file, '-n', '16'])
+subprocess.check_call(['ms', new_config_file, '-n', '15'])
 
 save_metsim_by_year(new_config_file)

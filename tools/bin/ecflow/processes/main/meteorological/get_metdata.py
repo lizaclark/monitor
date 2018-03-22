@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import cf_units
 from cdo import Cdo
 import xarray as xr
+import numpy as np
 
 from tonic.io import read_config
 from monitor import model_tools
@@ -166,7 +167,7 @@ def main():
                 ('srad', 'surface_downwelling_shortwave_flux_in_air'),
                 ('sph', 'specific_humidity')]
 
-    # check if data we are downloading coms from multiple years
+    # check if data we are downloading comes from multiple years
     # replace start date, end date and met location in the configuration file
     kwargs = {'SUBD_MET_START_DATE': vic_start_date_format,
               'END_DATE': end_date_format, 'VIC_START_DATE': vic_start_date_format,
@@ -223,6 +224,13 @@ def main():
     merge_ds.rename({'day': 'time'}, inplace=True)
     # add attributes
     merge_ds = recreate_attrs(merge_ds)
+    # Make sure tmax >= tmin always
+    tmin = np.copy(merge_ds['tmmn'].values)
+    tmax = np.copy(merge_ds['tmmx'].values)
+    swap_values = ((tmin > tmax) & (tmax != -32767.))
+    merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
+    merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
+
     # conservatively remap to grid file
     cdo.remapcon(grid_file, input=merge_ds, output=met_out)
 

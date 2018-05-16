@@ -123,10 +123,8 @@ def initialize_percentile(analysis_date, lats, lons, attr_dict, agg):
                               (['lat', 'lon'],
                                np.nan * np.ones([nlat, nlon]))},
                              coords={'lon': lons, 'lat': lats})
-    percentiles['ropercentile'].attrs['_FillValue'] = np.nan
-    percentiles['category'].attrs['_FillValue'] = np.nan
-    percentiles['lat'].attrs['_FillValue'] = np.nan
-    percentiles['lon'].attrs['_FillValue'] = np.nan
+    for varname in percentiles.variables.keys():
+        percentiles[varname].attrs['_FillValue'] = np.nan
     percentiles.attrs['analysis_date'] = analysis_date
     if agg == 'ccy':
         percentiles.attrs['title'] = ('Current calendar year runoff ' +

@@ -138,7 +138,7 @@ def main():
 
     for var in ('tmmn', 'tmmx'):
         # Perform units conversion
-        units_in = cf_units.Unit(met_dsets[var].air_tempurature.attrs['units'])
+        units_in = cf_units.Unit(met_dsets[var].air_temperature.attrs['units'])
         units_out = cf_units.Unit('degC')
         units_in.convert(met_dsets[var].air_temperature.values[:], units_out,
                          inplace=True)
